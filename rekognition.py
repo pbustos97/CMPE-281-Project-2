@@ -54,7 +54,9 @@ def lambda_handler(event, context):
                 tax = float(re.sub('[^0-9.]', '', tax))
                 print(type(tax))
                 print(tax)
-                        
+    
+    if storeName == [] or storeName == None or len(storeName) == 0:
+        storeName = ''
     if total == None:
         total = ''
     if tax == None:

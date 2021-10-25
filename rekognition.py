@@ -28,32 +28,42 @@ def lambda_handler(event, context):
     storeName = ' '.join(storeName)
     total = None
     tax = None
+    totalFound = False
+    taxFound = False
     print(storeName)
     #print(res)
     for index, r in enumerate(res['TextDetections']):
+        if totalFound and taxFound:
+            break
         if r['Type'] == 'LINE':
             detectedText = r['DetectedText'].lower()
-            if 'total' in detectedText and not ('subtotal' in detectedText):
+            if 'total' in detectedText and not ('subtotal' in detectedText) and not totalFound:
                 total = detectedText
                 if line_has_number(total):
                     total = float(re.sub('[^0-9.]', '', total))
                 else:
-                    prevIndex = res['TextDetections'][index-1]['DetectedText']
-                    nextIndex = res['TextDetections'][index+1]['DetectedText']
-                    prevIndex = float(re.sub('[^0-9.]', '', prevIndex))
-                    nextIndex = float(re.sub('[^0-9.]', '', nextIndex))
-                    if prevIndex >= nextIndex:
-                        total = prevIndex
-                    elif prevIndex < nextIndex:
-                        total = nextIndex
+                    prevValue = res['TextDetections'][index-1]['DetectedText']
+                    nextValue = 0.00
+                    if index+1 < len(res['TextDetections']):
+                        nextValue = res['TextDetections'][index+1]['DetectedText']
+                    prevValue = float(re.sub('[^0-9.]', '', prevValue))
+                    nextValue = float(re.sub('[^0-9.]', '', nextValue))
+                    if prevValue >= nextValue:
+                        total = prevValue
+                    elif prevValue < nextValue:
+                        total = nextValue
+                totalFound = True
             if 'tax' in detectedText:
                 tax = detectedText
+                if line_has_number(tax):
+                    tax = tax.split()
+                    tax = tax[-1]
+                    tax = float(re.sub('[^0-9.]', '', tax))
+                    taxFound = True
                 print(tax)
-                tax = tax.split()
-                tax = tax[-1]
-                tax = float(re.sub('[^0-9.]', '', tax))
                 print(type(tax))
                 print(tax)
+                
     
     if storeName == [] or storeName == None or len(storeName) == 0:
         storeName = ''

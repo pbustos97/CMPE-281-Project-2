@@ -71,10 +71,15 @@ def lambda_handler(event, context):
         total = ''
     if tax == None:
         tax = ''
-    res = {
+    resDict = {
         'storeName': storeName,
         'total': total,
         'taxAmount': tax
+    }
+    res = {
+        'userId': user,
+        'filePath': filePath,
+        'receiptInfo': resDict
     }
     return {
         'statusCode': 200,

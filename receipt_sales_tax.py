@@ -4,8 +4,18 @@ import pprint
 import boto3
 from line_has_number import line_has_number
 
+# Is used with a get function that includes query parameters
 def lambda_handler(event, context):
-    
+    if len(event['queryStringParameters']['bucket']) == 0 or event['queryStringParameters']['bucket'] == None:
+        retMsg = 'Missing bucket parameter'
+        if event['queryStringParameters']['file'] == None or len(event['queryStringParameters']['file']) == 0:
+            retMsg += ', missing file parameter'
+            if event['queryStringParameters']['userId'] == None or len(event['queryStringParameters']['userId']) == 0:
+                retMsg += ', missing userId parameter'
+        return {
+            'statusCode': 400,
+            'message': retMsg
+        }
     bucket = event['queryStringParameters']['bucket']
     file = event['queryStringParameters']['file']
     user = event['queryStringParameters']['userId']
@@ -30,8 +40,8 @@ def lambda_handler(event, context):
     tax = None
     totalFound = False
     taxFound = False
-    print(storeName)
-    #print(res)
+    # print(storeName)
+    # print(res)
     for index, r in enumerate(res['TextDetections']):
         if totalFound and taxFound:
             break
@@ -42,7 +52,9 @@ def lambda_handler(event, context):
                 if line_has_number(total):
                     total = float(re.sub('[^0-9.]', '', total))
                 else:
-                    prevValue = res['TextDetections'][index-1]['DetectedText']
+                    prevValue = 0.00
+                    if index-1 >= 0:
+                        prevValue = res['TextDetections'][index-1]['DetectedText']
                     nextValue = 0.00
                     if index+1 < len(res['TextDetections']):
                         nextValue = res['TextDetections'][index+1]['DetectedText']
@@ -60,9 +72,9 @@ def lambda_handler(event, context):
                     tax = tax[-1]
                     tax = float(re.sub('[^0-9.]', '', tax))
                     taxFound = True
-                print(tax)
-                print(type(tax))
-                print(tax)
+                # print(tax)
+                # print(type(tax))
+                # print(tax)
                 
     
     if storeName == [] or storeName == None or len(storeName) == 0:

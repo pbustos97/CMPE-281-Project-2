@@ -10,8 +10,8 @@
 This project is a section of [this repository](). This repository handles everything that has to do with Rekognition. Images of receipts should ideally be cropped to include Total amount, Tax amount, and store name. If there are too much text on the receipt, images should be cropped to Include Total amount and Tax amount if found on receipt.
 ## Screenshots
 - Lambda examples
-  - Not Logged In ![Not Logged In](https://i.imgur.com/GL8Ujrg.png)
-  - Logged In ![Logged In](https://imgur.com/GbaPrzo.png)
+  - Successful detection ![Success](https://i.imgur.com/tX7yfoe.png)
+  - Invalid input parameters ![Logged In](https://i.imgur.com/MlkbSzA.png)
 # Pre-requisites to setup
 - AWS Services for production
   - AWS S3, Transfer Acceleration

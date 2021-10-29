@@ -2,6 +2,7 @@ import re
 import json
 import pprint
 import boto3
+import os
 from decimal import *
 from line_has_number import line_has_number
 
@@ -148,8 +149,8 @@ def investment_interest():
 
 def dynamoUpdate(res):
     dynamodb = boto3.resource('dynamodb')
-    receiptTable = dynamodb.Table('itemize-receiptdb')
-    userTable = dynamodb.Table('itemize-userdb')
+    receiptTable = dynamodb.Table(os.environ['TABLE_RECEIPT'])
+    userTable = dynamodb.Table(os.environ['TABLE_USER'])
     receiptTable.update_item(
         Key={
             'filePath': res['filePath']

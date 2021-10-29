@@ -5,24 +5,46 @@ import boto3
 from decimal import *
 from line_has_number import line_has_number
 
-# Is used with a get function that includes query parameters
+# Baseline is getting the query parameters and passing them into the functions
 def lambda_handler(event, context):
+    # Makes sure that there are query parameters inside of the request
     if len(event['queryStringParameters']['bucket']) == 0 or event['queryStringParameters']['bucket'] == None:
         retMsg = 'Missing bucket parameter'
         if event['queryStringParameters']['file'] == None or len(event['queryStringParameters']['file']) == 0:
             retMsg += ', missing file parameter'
             if event['queryStringParameters']['userId'] == None or len(event['queryStringParameters']['userId']) == 0:
                 retMsg += ', missing userId parameter'
+                if event['queryStringParameters']['category'] == None or len(event['queryStringParameters']['category']) == 0:
+                    retMsg += ', missing category parameter'
         return {
             'statusCode': 400,
             'message': retMsg
         }
+
     bucket = event['queryStringParameters']['bucket']
     file = event['queryStringParameters']['file']
     user = event['queryStringParameters']['userId']
-    category = 'sales tax'
+    category = event['queryStringParameters']['category']
     filePath = str(user) + '/' + str(file)
+    res = None
+
+    res = dispatch(category, bucket, filePath, user)
+
     
+    if res == None:
+        return {
+        'statusCode': 400,
+        'message': 'Something went wrong with category matching'
+        }
+    dynamoUpdate(res)
+    return {
+        'statusCode': 200,
+        'body': json.dumps(res)
+    }
+
+### Taxes paid ###
+
+def sales_tax(bucket, filePath, user, category):
     rekognition = boto3.client('rekognition', 'us-west-2')
     res = rekognition.detect_text(
         Image={
@@ -73,11 +95,7 @@ def lambda_handler(event, context):
                     tax = tax.split()
                     tax = tax[-1]
                     tax = float(re.sub('[^0-9.]', '', tax))
-                    taxFound = True
-                # print(tax)
-                # print(type(tax))
-                # print(tax)
-                
+                    taxFound = True                
     
     if storeName == [] or storeName == None or len(storeName) == 0:
         storeName = ''
@@ -96,12 +114,37 @@ def lambda_handler(event, context):
         'filePath': filePath,
         'receiptInfo': resDict
     }
+    return res
 
-    dynamoUpdate(res)
-    return {
-        'statusCode': 200,
-        'body': json.dumps(res)
-    }
+def income_tax():
+    return None
+
+def property_tax():
+    return None
+
+def real_estate_tax():
+    return None
+
+### Medical expenses ###
+
+def medical_tax():
+    return None
+
+### Charitable contributions ###
+
+def charity():
+    return None
+
+### Interests ###
+
+def mortgage_interest():
+    return
+
+def investment_interest():
+    return None
+
+
+### Helper functions ###
 
 def dynamoUpdate(res):
     dynamodb = boto3.resource('dynamodb')
@@ -120,3 +163,25 @@ def dynamoUpdate(res):
         }
         )
     return
+
+def dispatch(category, bucket, filePath, user):
+
+    if category == 'sales_tax':
+        res = sales_tax(bucket, filePath, user, category)
+    elif category == 'medical_tax':
+        res = medical_tax()
+    elif category == 'income_tax':
+        res = income_tax()
+    elif category == 'property_tax':
+        res = property_tax()
+    elif category == 'real_estate_tax':
+        res = real_estate_tax()
+    elif category == 'charity':
+        res = charity()
+    elif category == 'investment_interest':
+        res = investment_interest()
+    elif category == 'mortgage_interest':
+        res = mortgage_interest()
+    else:
+        res = None
+    return res

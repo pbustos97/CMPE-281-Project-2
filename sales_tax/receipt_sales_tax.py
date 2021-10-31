@@ -8,7 +8,7 @@ from line_has_number import line_has_number
 
 # Baseline is getting the query parameters and passing them into the functions
 def lambda_handler(event, context):
-    # Makes sure that there are query parameters inside of the request
+    # Makes sure that there are valid query parameters inside of the request
     if len(event['queryStringParameters']['bucket']) == 0 or event['queryStringParameters']['bucket'] == None:
         retMsg = 'Missing bucket parameter'
         if event['queryStringParameters']['file'] == None or len(event['queryStringParameters']['file']) == 0:
@@ -37,7 +37,7 @@ def lambda_handler(event, context):
         'statusCode': 400,
         'message': 'Something went wrong with category matching'
         }
-    dynamoUpdate(res)
+    #dynamoUpdate(res)
     return {
         'statusCode': 200,
         'body': json.dumps(res)
@@ -46,7 +46,7 @@ def lambda_handler(event, context):
 ### Taxes paid ###
 
 def sales_tax(bucket, filePath, user, category):
-    rekognition = boto3.client('rekognition', 'us-west-2')
+    rekognition = boto3.client('rekognition', os.environ['REGION'])
     res = rekognition.detect_text(
         Image={
         'S3Object': {
@@ -147,6 +147,7 @@ def investment_interest():
 
 ### Helper functions ###
 
+# DEPRICATED, no reason for this lambda to update db in prod
 def dynamoUpdate(res):
     dynamodb = boto3.resource('dynamodb')
     receiptTable = dynamodb.Table(os.environ['TABLE_RECEIPT'])

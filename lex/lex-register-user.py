@@ -3,6 +3,8 @@ import boto3
 import time
 import logging
 import os
+import uuid
+import re
 from decimal import *
 
 logger = logging.getLogger()
@@ -10,6 +12,10 @@ logger.setLevel(logging.DEBUG)
 
 ### Handler ###
 def lambda_handler(event, context):
+    logger.debug('[EVENT] event: {}'.format(type(event)))
+    logger.debug('[CONTEXT] identity: {}'.format(context.identity))
+    logger.debug('[CONTEXT] identityId: {}'.format(context.identity.cognito_identity_id))
+    logger.debug('[CONTEXT] identityPoolId: {}'.format(context.identity.cognito_identity_pool_id))
     logger.debug('event={}'.format(event))
     os.environ['TZ'] = 'America/Los_Angeles'
     time.tzset()
@@ -17,6 +23,7 @@ def lambda_handler(event, context):
     logger.debug('event.bot.name={}'.format(event['bot']['name']))
     
     return dispatch(event)
+
 
 def RegisterUser(intent_request):
     logger.debug('RegisterUser')
@@ -51,7 +58,9 @@ def RegisterUser(intent_request):
         
         return delegate(output_session_attributes, get_slots(intent_request))
     
-    UpdateTable(intent_request['userId'], name, agi, filing_status, filers, properties)
+    logger.debug('[SESSION] {}'.format(type(intent_request['sessionAttributes'])))
+    intent_request['sessionAttributes']['lexRegisterId'] = str(uuid.uuid4())
+    #UpdateTable(intent_request['userId'], name, agi, filing_status, filers, properties)
     message = {
         'contentType': 'PlainText',
         'content': 'Thank you for registering with us {} {}'.format(name['first_name'].capitalize(), name['last_name'].capitalize())
@@ -59,7 +68,8 @@ def RegisterUser(intent_request):
     return close(intent_request['sessionAttributes'],
                  'Fulfilled',
                   message)
-                
+
+# Makes sure that all the fields during the lex registration process are valid
 def validate_data(name:dict, agi, filing_status, filers:dict, properties):
     logger.debug('validate_data')
     if name['first_name'] is not None:
@@ -74,8 +84,16 @@ def validate_data(name:dict, agi, filing_status, filers:dict, properties):
                 return build_validation_result(False, 'last_name', 'Last names do not contain numbers')
     if agi is not None:
         logger.debug('agi: {}'.format(agi))
+        agi = re.sub('[^0-9.]', '', str(agi))
+        count = 0
+        for i in agi:
+            if i == ".":
+                count += 1
+            if count >= 2:
+                return build_validation_result(False, 'agi', 'AGI has too many "."')
         if float(agi) < 0:
             return build_validation_result(False, 'agi', 'AGI cannot be negative')
+        
     filing_types = ['single', 
                       'married filing jointly',
                       'married filing separately',
@@ -112,8 +130,8 @@ def dispatch(intent_request):
         return RegisterUser(intent_request)
 
     raise Exception('Intent with name ' + intent_name + ' not supported')
-    
 
+# DEPRECIATED, frontend calls signup
 def UpdateTable(userId, name:dict, agi, filing_status, filers:dict, properties):
     logger.debug('UpdateTable method | userId: {} | name: {} | agi: {} | filing_status: {} | filers: {} | properties: {}'.format(userId, name, agi, filing_status, filers, properties))
     dynamodb = boto3.resource('dynamodb')
@@ -130,6 +148,7 @@ def UpdateTable(userId, name:dict, agi, filing_status, filers:dict, properties):
             'properties': properties
         })
 
+# Returns the currentIntent slots from an event
 def get_slots(intent_request):
     return intent_request['currentIntent']['slots']
 
@@ -149,6 +168,7 @@ def build_validation_result(is_valid, violated_slot, message_content):
         'message': {'contentType': 'Plaintext', 'content': message_content}
     }
 
+# Returns the slot that is next in the Lex intent
 def elicit_slot(session_attributes, intent_name, slots, slots_to_elicit, message):
     logger.debug('elicit_slot method | session_attributes: {} | intent_name: {} | slots: {} | slots_to_elicit: {} | message: {}'.format(session_attributes, intent_name, slots, slots_to_elicit, message))
     return {
@@ -171,7 +191,8 @@ def delegate(session_attributes, slots):
             'slots': slots
         }
     }
-    
+
+# Final message when the intent flow is finished
 def close(session_attributes, fulfillment_state, message):
     logger.debug('close method | session_attributes: {} | fulfillmentState: {} | message: {}'.format(session_attributes, fulfillment_state, message))
     response = {

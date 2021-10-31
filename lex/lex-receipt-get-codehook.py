@@ -13,6 +13,7 @@ import datetime
 import time
 import os
 import logging
+import json
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -93,35 +94,31 @@ def isvalid_date(date):
         return False
 
 
-def validate_order_flowers(flower_type, date, pickup_time):
-    flower_types = ['lilies', 'roses', 'tulips']
-    if flower_type is not None and flower_type.lower() not in flower_types:
-        return build_validation_result(False,
-                                       'FlowerType',
-                                       'We do not have {}, would you like a different type of flower?  '
-                                       'Our most popular flowers are roses'.format(flower_type))
-
+def validate_order_date(date):
     if date is not None:
         if not isvalid_date(date):
-            return build_validation_result(False, 'PickupDate', 'I did not understand that, what date would you like to pick the flowers up?')
-        elif datetime.datetime.strptime(date, '%Y-%m-%d').date() <= datetime.date.today():
-            return build_validation_result(False, 'PickupDate', 'You can pick up the flowers from tomorrow onwards.  What day would you like to pick them up?')
+            return build_validation_result(False, 'date', 'I did not understand that, what date do you want your receipts from?')
+        elif datetime.datetime.strptime(date, '%Y-%m-%d').date() > datetime.date.today():
+            return build_validation_result(False, 'date', "You can't get receipts from the future")
 
-    if pickup_time is not None:
-        if len(pickup_time) != 5:
-            # Not a valid time; use a prompt defined on the build-time model.
-            return build_validation_result(False, 'PickupTime', None)
+    return build_validation_result(True, None, None)
 
-        hour, minute = pickup_time.split(':')
-        hour = parse_int(hour)
-        minute = parse_int(minute)
-        if math.isnan(hour) or math.isnan(minute):
-            # Not a valid time; use a prompt defined on the build-time model.
-            return build_validation_result(False, 'PickupTime', None)
+def validate_order_dates(startDate, endDate):
+    if startDate is not None:
+        if not isvalid_date(startDate):
+            return build_validation_result(False, 'start_date', 'I did not understand that, what start date do you want your receipts from?')
+        elif datetime.datetime.strptime(startDate, '%Y-%m-%d').date() >= datetime.date.today():
+            return build_validation_result(False, 'start_date', "You can't start getting receipts from the today or get receipts from the future")
 
-        if hour < 10 or hour > 16:
-            # Outside of business hours
-            return build_validation_result(False, 'PickupTime', 'Our business hours are from ten a m. to five p m. Can you specify a time during this range?')
+    if endDate is not None:
+        if not invalid_date(endDate):
+            return build_validation_result(False, 'end_date', 'I did not understand that, at what end date do you want your receipts?')
+        elif datetime.datetime.strptime(endDate, '%Y-%m-%d').date() > datetime.date.today():
+            return build_validation_result(False, 'end_date', "You can't look for receipts that are in the future")
+
+    if startDate is not None and endDate is not None:
+        if datetime.datetime.strptime(startDate, '%Y-%m-%d').date() >= datetime.datetime.strptime(endDate, '%Y-%m-%d').date():
+            return build_validation_result(False, 'start_date', "You can't have a start date that's ahead of the end date")
 
     return build_validation_result(True, None, None)
 
@@ -129,16 +126,14 @@ def validate_order_flowers(flower_type, date, pickup_time):
 """ --- Functions that control the bot's behavior --- """
 
 
-def order_flowers(intent_request):
+def GetReceiptsAroundDate(intent_request):
     """
     Performs dialog management and fulfillment for ordering flowers.
     Beyond fulfillment, the implementation of this intent demonstrates the use of the elicitSlot dialog action
     in slot validation and re-prompting.
     """
 
-    flower_type = get_slots(intent_request)["FlowerType"]
-    date = get_slots(intent_request)["PickupDate"]
-    pickup_time = get_slots(intent_request)["PickupTime"]
+    date = get_slots(intent_request)["date"]
     source = intent_request['invocationSource']
 
     if source == 'DialogCodeHook':
@@ -146,7 +141,7 @@ def order_flowers(intent_request):
         # Use the elicitSlot dialog action to re-prompt for the first violation detected.
         slots = get_slots(intent_request)
 
-        validation_result = validate_order_flowers(flower_type, date, pickup_time)
+        validation_result = validate_order_date(date)
         if not validation_result['isValid']:
             slots[validation_result['violatedSlot']] = None
             return elicit_slot(intent_request['sessionAttributes'],
@@ -158,17 +153,42 @@ def order_flowers(intent_request):
         # Pass the price of the flowers back through session attributes to be used in various prompts defined
         # on the bot model.
         output_session_attributes = intent_request['sessionAttributes'] if intent_request['sessionAttributes'] is not None else {}
-        if flower_type is not None:
-            output_session_attributes['Price'] = len(flower_type) * 5  # Elegant pricing model
 
         return delegate(output_session_attributes, get_slots(intent_request))
 
     # Order the flowers, and rely on the goodbye message of the bot to define the message to the end user.
     # In a real bot, this would likely involve a call to a backend service.
+    receiptDict = {}
     return close(intent_request['sessionAttributes'],
                  'Fulfilled',
-                 {'contentType': 'PlainText',
-                  'content': 'Thanks, your order for {} has been placed and will be ready for pickup by {} on {}'.format(flower_type, pickup_time, date)})
+                 {'contentType': 'CustomPayload',
+                  'content': json.dumps(receiptDict)})
+
+def GetReceiptsBetweenDates(intent_request):
+    startDate = get_slots(intent_request)["start_date"]
+    endDate = get_slots(intent_request)["end_date"]
+    source = intent_request['invocationSource']
+
+    if source == 'DialogCodeHook':
+        slots = get_slots(intent_request)
+
+        validation_result = validate_order_dates(startDate, endDate)
+        if not validation_result['isValid']:
+            slots[validation_result['violatedSlot']] = None
+            return elicit_slot(intent_request['sessionAttributes'],
+                               intent_request['currentIntent']['name'],
+                               slots,
+                               validation_result['violatedSlot'],
+                               validation_result['message'])
+
+        output_session_attributes = intent_request['sessionAttributes'] if intent_request['sessionAttributes'] is not None else {}
+        return delegate(output_session_attributes, get_slots(intent_request))
+
+    receiptDict = {}
+    return close(intent_request['sessionAttributes'],
+                'Fulfilled',
+                { 'contentType': 'CustomPayload',
+                  'content': json.dumps(receiptDict)})
 
 
 """ --- Intents --- """
@@ -184,8 +204,12 @@ def dispatch(intent_request):
     intent_name = intent_request['currentIntent']['name']
 
     # Dispatch to your bot's intent handlers
-    if intent_name == 'OrderFlowers':
-        return order_flowers(intent_request)
+    if intent_name == 'GetReceiptsAroundDate':
+        return GetReceiptsAroundDate(intent_request)
+    elif intent_name == 'GetReceiptsBetweenDates':
+        return GetReceiptsBetweenDates(intent_request)
+    elif intent_name == 'GetReceiptsOnDate':
+        return GetReceiptsOnDate()
 
     raise Exception('Intent with name ' + intent_name + ' not supported')
 
@@ -198,8 +222,8 @@ def lambda_handler(event, context):
     Route the incoming request based on intent.
     The JSON body of the request is provided in the event slot.
     """
-    # By default, treat the user request as coming from the America/New_York time zone.
-    os.environ['TZ'] = 'America/New_York'
+    # By default, treat the user request as coming from the America/Los_Angeles time zone.
+    os.environ['TZ'] = 'America/Los_Angeles'
     time.tzset()
     logger.debug('event.bot.name={}'.format(event['bot']['name']))
 

@@ -37,7 +37,7 @@ def lambda_handler(event, context):
         'statusCode': 400,
         'message': 'Something went wrong with category matching'
         }
-    #dynamoUpdate(res)
+
     return {
         'statusCode': 200,
         'body': json.dumps(res)

@@ -26,7 +26,7 @@ def lambda_handler(event, context):
 
 
 def RegisterUser(intent_request):
-    logger.debug('RegisterUser')
+    logger.debug('[RegisterUser]')
     name = {}
     first_name = get_slots(intent_request)['first_name']
     last_name = get_slots(intent_request)['last_name']
@@ -60,7 +60,7 @@ def RegisterUser(intent_request):
     
     logger.debug('[SESSION] {}'.format(type(intent_request['sessionAttributes'])))
     intent_request['sessionAttributes']['lexRegisterId'] = str(uuid.uuid4())
-    #UpdateTable(intent_request['userId'], name, agi, filing_status, filers, properties)
+
     message = {
         'contentType': 'PlainText',
         'content': 'Thank you for registering with us {} {}'.format(name['first_name'].capitalize(), name['last_name'].capitalize())
@@ -71,19 +71,19 @@ def RegisterUser(intent_request):
 
 # Makes sure that all the fields during the lex registration process are valid
 def validate_data(name:dict, agi, filing_status, filers:dict, properties):
-    logger.debug('validate_data')
+    logger.debug('[VALIDATE_DATA]')
     if name['first_name'] is not None:
-        logger.debug('first_name: {}'.format(name['first_name']))
+        logger.debug('[VALIDATE_DATA] first_name: {}'.format(name['first_name']))
         for i in str(name['first_name']):
             if i.isdigit():
                 return build_validation_result(False, 'first_name', 'First names do not contain numbers')
     if name['last_name'] is not None:
-        logger.debug('last_name: {}'.format(name['last_name']))
+        logger.debug('[VALIDATE_DATA] last_name: {}'.format(name['last_name']))
         for i in str(name['last_name']):
             if i.isdigit():
                 return build_validation_result(False, 'last_name', 'Last names do not contain numbers')
     if agi is not None:
-        logger.debug('agi: {}'.format(agi))
+        logger.debug('[VALIDATE_DATA] agi: {}'.format(agi))
         agi = re.sub('[^0-9.]', '', str(agi))
         count = 0
         for i in agi:
@@ -100,28 +100,28 @@ def validate_data(name:dict, agi, filing_status, filers:dict, properties):
                       'head of household',
                       'qualifying widow(er) with dependent child']
     if filing_status is not None:
-        logger.debug('filing_status: {}'.format(filing_status))
+        logger.debug('[VALIDATE_DATA] filing_status: {}'.format(filing_status))
         if str(filing_status).lower() not in filing_types:
             return build_validation_result(False, 'filing_status', 'Unable to verify filing status')
     if filers['filers_blind'] is not None:
-        logger.debug('filers_blind: {}'.format(filers['filers_blind']))
+        logger.debug('[VALIDATE_DATA] filers_blind: {}'.format(filers['filers_blind']))
         if int(filers['filers_blind']) < 0:
             return build_validation_result(False, 'filers_blind', 'There cannot be negative blind filers')
     if filers['filers_sixtyfive'] is not None:
-        logger.debug('filers_sixtyfive: {}'.format(filers['filers_sixtyfive']))
+        logger.debug('[VALIDATE_DATA] filers_sixtyfive: {}'.format(filers['filers_sixtyfive']))
         if int(filers['filers_sixtyfive']) < 0:
             return build_validation_result(False, 'filers_sixtyfive', 'There cannot be negative filers over the age of 65')
     if properties is not None:
-        logger.debug('properties: {}'.format(properties))
+        logger.debug('[VALIDATE_DATA] properties: {}'.format(properties))
         if int(properties) < 0:
             return build_validation_result(False, 'properties', 'Nobody can own negative properties')
-    logger.debug('validate_data: success')
+    logger.debug('[VALIDATE_DATA] success')
     return build_validation_result(True, None, None)
 
 ### Helper functions ###
     
 def dispatch(intent_request):
-    logger.debug('dispatch userId={}, intentName={}'.format(intent_request['userId'], intent_request['currentIntent']['name']))
+    logger.debug('[DISPATCH] userId={}, intentName={}'.format(intent_request['userId'], intent_request['currentIntent']['name']))
 
     intent_name = intent_request['currentIntent']['name']
 
@@ -155,7 +155,7 @@ def get_slots(intent_request):
 ### Response Helper Functions ###
         
 def build_validation_result(is_valid, violated_slot, message_content):
-    logger.debug('build_validation_result | is_valid: {} | violated_slot: {} | message_content: {}'.format(is_valid, violated_slot, message_content))
+    logger.debug('[BUILD_VALIDATION_RESULT] | is_valid: {} | violated_slot: {} | message_content: {}'.format(is_valid, violated_slot, message_content))
     if message_content is None:
         return {
             'isValid': is_valid,
@@ -170,7 +170,7 @@ def build_validation_result(is_valid, violated_slot, message_content):
 
 # Returns the slot that is next in the Lex intent
 def elicit_slot(session_attributes, intent_name, slots, slots_to_elicit, message):
-    logger.debug('elicit_slot method | session_attributes: {} | intent_name: {} | slots: {} | slots_to_elicit: {} | message: {}'.format(session_attributes, intent_name, slots, slots_to_elicit, message))
+    logger.debug('[ELICIT_SLOT] | session_attributes: {} | intent_name: {} | slots: {} | slots_to_elicit: {} | message: {}'.format(session_attributes, intent_name, slots, slots_to_elicit, message))
     return {
         'sessionAttributes': session_attributes,
         'dialogAction': {
@@ -183,7 +183,7 @@ def elicit_slot(session_attributes, intent_name, slots, slots_to_elicit, message
     }
     
 def delegate(session_attributes, slots):
-    logger.debug('delegate method | session_attributes: {} | slots: {}'.format(session_attributes, slots))
+    logger.debug('[DELEGATE] | session_attributes: {} | slots: {}'.format(session_attributes, slots))
     return {
         'sessionAttributes': session_attributes,
         'dialogAction': {
@@ -194,7 +194,7 @@ def delegate(session_attributes, slots):
 
 # Final message when the intent flow is finished
 def close(session_attributes, fulfillment_state, message):
-    logger.debug('close method | session_attributes: {} | fulfillmentState: {} | message: {}'.format(session_attributes, fulfillment_state, message))
+    logger.debug('[CLOSE] | session_attributes: {} | fulfillmentState: {} | message: {}'.format(session_attributes, fulfillment_state, message))
     response = {
         'sessionAttributes': session_attributes,
         'dialogAction': {
@@ -203,6 +203,6 @@ def close(session_attributes, fulfillment_state, message):
             'message': message
         }
     }
-    logger.debug('response={}'.format(response))
+    logger.debug('[CLOSE] response={}'.format(response))
     return response
     

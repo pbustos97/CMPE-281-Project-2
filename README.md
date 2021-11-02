@@ -30,12 +30,18 @@ This project is a section of [this repository](). This repository handles everyt
   - AWS API Gateway, S3, Lambda, Lex
 - How to setup repository for testing
   - (Code should not be using third party packages)
-  - Create a Lambda function with any name
-  - Copy and Paste one of the 'receipt' .py files into the default Lambda function
-    - This file should be called lambda_handler.py
-  - Upload all the coomon .py files that do not have 'receipt' in the name to the Lambda folder
-  - When creating a test, make sure that the 'category', file', and 'userId' query parameters are in the test.
+  - Create two Lambda functions with any name
+  - Copy and Paste the code in the `receipt_sales_tax.py` file into the default Lambda function of one of the created Lambdas
+    - This file inside of the Lambda console should be called lambda_handler.py
+  - Upload all the common .py files from the common folder to the Lambda console folder containing the file lambda_handler.py
+  - Copy and Paste the code in the `lex-register-user.py` file into the other created Lambda
+  - When creating a test for the Rekognition Lambda, make sure that the 'category', file', and 'userId' query parameters are in the test.
     - This is important for the Rekognition Lambda to work
+  - When creating a test for the Lex Lambda, make sure that Lex is properly set up first.
+    - Use the v1 console of Lex in order to create the chatbot.
+    - For the Lex settings, on one of the Intents, have the settings look like this [image](https://i.imgur.com/5vo6pCi.png). With everything else on default settings.
+    - Test the chat bot using whatever appropriate inputs you want, then go into Cloud Watch and look for an entry that says `[EVENT] event: `
+    - Copy the settings from that Cloud Watch entry into the Lex Lambda test and fix the formatting to one that will not show errors.
   - Run the tests, output should have the relevant data if the data was uploaded correctly
   
 ### Issues

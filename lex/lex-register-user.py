@@ -12,10 +12,8 @@ logger.setLevel(logging.DEBUG)
 
 ### Handler ###
 def lambda_handler(event, context):
-    logger.debug('[EVENT] event: {}'.format(type(event)))
-    logger.debug('[CONTEXT] identity: {}'.format(context.identity))
-    logger.debug('[CONTEXT] identityId: {}'.format(context.identity.cognito_identity_id))
-    logger.debug('[CONTEXT] identityPoolId: {}'.format(context.identity.cognito_identity_pool_id))
+    logger.debug('[EVENT] event: {}'.format(event))
+    logger.debug('[CONTEXT] context: {}'.format(context))
     logger.debug('event={}'.format(event))
     os.environ['TZ'] = 'America/Los_Angeles'
     time.tzset()

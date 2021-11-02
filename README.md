@@ -39,8 +39,9 @@ This project is a section of [this repository](). This repository handles everyt
     - This is important for the Rekognition Lambda to work
   - When creating a test for the Lex Lambda, make sure that Lex is properly set up first.
     - Use the v1 console of Lex in order to create the chatbot.
-    - For the Lex settings, on one of the Intents, have the settings look like this [image](https://i.imgur.com/5vo6pCi.png). With everything else on default settings.
-    - Test the chat bot using whatever appropriate inputs you want, then go into Cloud Watch and look for an entry that says `[EVENT] event: `
+    - For the Lex settings, on one of the Intents, have the settings look like this [image](https://i.imgur.com/5vo6pCi.png).
+      - Lambda Initialization and Validation field and the Fulfillment field should be linked to the Lambda function created for the Lex bot.
+    - Test the chat bot using whatever appropriate inputs you want, then go into Cloud Watch and look for an entry that says `[EVENT] event: ` inside of the Lex's Lambda logs. 
     - Copy the settings from that Cloud Watch entry into the Lex Lambda test and fix the formatting to one that will not show errors.
   - Run the tests, output should have the relevant data if the data was uploaded correctly
   

@@ -40,7 +40,13 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': json.dumps(res)
+        'body': json.dumps(res),
+        'headers': {
+            "Access-Control-Allow-Headers" : "Content-Type",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Credentials": True
+        }
     }
 
 ### Taxes paid ###

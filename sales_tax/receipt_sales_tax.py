@@ -9,24 +9,21 @@ from line_has_number import line_has_number
 # Baseline is getting the query parameters and passing them into the functions
 def lambda_handler(event, context):
     # Makes sure that there are valid query parameters inside of the request
-    if len(event['queryStringParameters']['bucket']) == 0 or event['queryStringParameters']['bucket'] == None:
-        retMsg = 'Missing bucket parameter'
-        if event['queryStringParameters']['file'] == None or len(event['queryStringParameters']['file']) == 0:
-            retMsg += ', missing file parameter'
-            if event['queryStringParameters']['userId'] == None or len(event['queryStringParameters']['userId']) == 0:
-                retMsg += ', missing userId parameter'
-                if event['queryStringParameters']['category'] == None or len(event['queryStringParameters']['category']) == 0:
-                    retMsg += ', missing category parameter'
+    if event['queryStringParameters']['filePath'] == None or len(event['queryStringParameters']['filePath']) == 0:
+        retMsg += ', missing filePath parameter'
+        if event['queryStringParameters']['userId'] == None or len(event['queryStringParameters']['userId']) == 0:
+            retMsg += ', missing userId parameter'
+            if event['queryStringParameters']['category'] == None or len(event['queryStringParameters']['category']) == 0:
+                retMsg += ', missing category parameter'
         return {
             'statusCode': 400,
             'message': retMsg
         }
 
-    bucket = event['queryStringParameters']['bucket']
-    file = event['queryStringParameters']['file']
+    bucket = os.environ['BUCKET']
+    filePath = event['queryStringParameters']['filePath']
     user = event['queryStringParameters']['userId']
     category = event['queryStringParameters']['category']
-    filePath = str(user) + '/' + str(file)
     res = None
 
     res = dispatch(category, bucket, filePath, user)

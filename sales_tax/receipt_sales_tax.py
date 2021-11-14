@@ -3,8 +3,12 @@ import json
 import pprint
 import boto3
 import os
+import logging
 from decimal import *
 from line_has_number import line_has_number
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 # Baseline is getting the query parameters and passing them into the functions
 def lambda_handler(event, context):
@@ -49,14 +53,7 @@ def lambda_handler(event, context):
 ### Taxes paid ###
 
 def sales_tax(bucket, filePath, user, category):
-    rekognition = boto3.client('rekognition', os.environ['REGION'])
-    res = rekognition.detect_text(
-        Image={
-        'S3Object': {
-            'Bucket': str(bucket),
-            'Name': filePath
-        }
-    })
+    res = readImage(bucket, filePath)
     storeName = []
     for r in res['TextDetections']:
         if r['Type'] == 'LINE':
@@ -78,7 +75,11 @@ def sales_tax(bucket, filePath, user, category):
             if 'total' in detectedText and not ('subtotal' in detectedText) and not totalFound:
                 total = detectedText
                 if line_has_number(total):
-                    total = float(re.sub('[^0-9.]', '', total))
+                    total = re.sub('[^0-9.]', '', total)
+                    total = total.split('.')
+                    total = [total[0], total[1]]
+                    total = '.'.join(total)
+                    total = float(total)
                 else:
                     prevValue = 0.00
                     if index-1 >= 0:
@@ -86,8 +87,16 @@ def sales_tax(bucket, filePath, user, category):
                     nextValue = 0.00
                     if index+1 < len(res['TextDetections']):
                         nextValue = res['TextDetections'][index+1]['DetectedText']
-                    prevValue = float(re.sub('[^0-9.]', '', prevValue))
-                    nextValue = float(re.sub('[^0-9.]', '', nextValue))
+                    prevValue = re.sub('[^0-9.]', '', prevValue)
+                    prevValue = prevValue.split('.')
+                    prevValue = [prevValue[0], prevValue[1]]
+                    prevValue = '.'.join(prevValue)
+                    prevValue = float(prevValue)
+                    nextValue = re.sub('[^0-9.]', '', nextValue)
+                    nextValue = nextValue.split('.')
+                    nextValue = [nextValue[0], nextValue[1]]
+                    nextValue = '.'.join(nextValue)
+                    nextValue = float(nextValue)
                     if prevValue >= nextValue:
                         total = prevValue
                     elif prevValue < nextValue:
@@ -120,8 +129,29 @@ def sales_tax(bucket, filePath, user, category):
     }
     return res
 
-def income_tax():
-    return None
+def income_tax(bucket, filePath, user, category):
+    res = readImage(bucket, filePath)
+    employerName = 'Google'
+    federalAmount = 134.23
+    for index, r in enumerate(res['TextDetections']):
+        logger.debug("[INCOME_TAX] detected text: {}".format(r['DetectedText']))
+        # if r['Type'] == 'LINE':
+        #     detectedText = r['DetectedText'].lower()
+        #     if 'federal income' in detectedText:
+        #         logger.debug("[INCOME_TAX] federal detected line: {}".format(detectedText))
+        #         logger.debug("[INCOME_TAX] previous detected line: {}".format(res['TextDetections'][index-1]['DetectedText']))
+        #         logger.debug("[INCOME_TAX] next detected line: {}".format(res['TextDetections'][index+1]['DetectedText']))
+    resDict = {
+        'employerName': employerName,
+        'form': 'w2',
+        'federalAmount': federalAmount,
+        'category': category
+    }
+    res = {
+        'userId': user,
+        'filePath': filePath,
+        'receiptInfo': resDict
+    }
 
 def property_tax():
     return None
@@ -150,6 +180,50 @@ def investment_interest():
 
 ### Helper functions ###
 
+# Rekognition helper function
+def readImage(bucket, filePath):
+    rekognition = boto3.client('rekognition', os.environ['REGION'])
+    return rekognition.detect_text(
+        Image={
+        'S3Object': {
+            'Bucket': str(bucket),
+            'Name': filePath
+        }
+    })
+
+# Rekognition helper function with filter
+def readImageFilter(bucket, filePath, filter):
+    rekognition = boto3.client('rekognition', os.environ['REGION'])
+    filters = {
+        'RegionsOfInterest': [
+            {
+                'BoundingBox': {
+                    'Width': 0 ,
+                    'Height': 0,
+                    'Left': 0,
+                    'Top': 0
+                }
+            }]
+        }
+    if filter == 'w2':
+        filters = {
+        'RegionsOfInterest': [
+            {
+                'BoundingBox': {
+                    'Left': 50,
+                    'Top': 0
+                }
+            }]
+        }
+    return rekognition.detect_text(
+        Image={
+        'S3Object': {
+            'Bucket': str(bucket),
+            'Name': filePath
+        },
+        },
+        Filters=filters)
+
 # DEPRICATED, no reason for this lambda to update db in prod
 def dynamoUpdate(res):
     dynamodb = boto3.resource('dynamodb')
@@ -176,7 +250,7 @@ def dispatch(category, bucket, filePath, user):
     elif category == 'medical_tax':
         res = medical_tax()
     elif category == 'income_tax':
-        res = income_tax()
+        res = income_tax(bucket, filePath, user, category)
     elif category == 'property_tax':
         res = property_tax()
     elif category == 'real_estate_tax':

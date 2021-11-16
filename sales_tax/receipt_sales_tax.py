@@ -130,17 +130,20 @@ def sales_tax(bucket, filePath, user, category):
     return res
 
 def income_tax(bucket, filePath, user, category):
-    res = readImage(bucket, filePath)
+    res = readImageFilter(bucket, filePath, 'w2')
     employerName = 'Google'
-    federalAmount = 134.23
+    federalAmount = 0.00
     for index, r in enumerate(res['TextDetections']):
-        logger.debug("[INCOME_TAX] detected text: {}".format(r['DetectedText']))
-        # if r['Type'] == 'LINE':
-        #     detectedText = r['DetectedText'].lower()
-        #     if 'federal income' in detectedText:
-        #         logger.debug("[INCOME_TAX] federal detected line: {}".format(detectedText))
-        #         logger.debug("[INCOME_TAX] previous detected line: {}".format(res['TextDetections'][index-1]['DetectedText']))
-        #         logger.debug("[INCOME_TAX] next detected line: {}".format(res['TextDetections'][index+1]['DetectedText']))
+        # logger.debug("[INCOME_TAX] detected text: {}".format(r['DetectedText']))
+        if r['Type'] == 'LINE':
+            detectedText = r['DetectedText'].lower()
+            logger.debug("[INCOME_TAX] detected line: {}".format(detectedText))
+            if 'wages' in detectedText:
+                logger.debug("[INCOME_TAX] wages: {}".format(res['TextDetections'][index+1]['DetectedText']))
+                logger.debug("[INCOME_TAX] federal tax: {}".format(res['TextDetections'][index+2]['DetectedText']))
+                federalAmount = re.sub('[^0-9.]', '', res['TextDetections'][index+2]['DetectedText'])
+                federalAmount = float(federalAmount)
+                break
     resDict = {
         'employerName': employerName,
         'form': 'w2',
@@ -152,6 +155,7 @@ def income_tax(bucket, filePath, user, category):
         'filePath': filePath,
         'receiptInfo': resDict
     }
+    return res
 
 def property_tax():
     return None
@@ -210,7 +214,9 @@ def readImageFilter(bucket, filePath, filter):
         'RegionsOfInterest': [
             {
                 'BoundingBox': {
-                    'Left': 50,
+                    'Width': 1,
+                    'Height': 1,
+                    'Left': .5,
                     'Top': 0
                 }
             }]
@@ -220,7 +226,7 @@ def readImageFilter(bucket, filePath, filter):
         'S3Object': {
             'Bucket': str(bucket),
             'Name': filePath
-        },
+            },
         },
         Filters=filters)
 

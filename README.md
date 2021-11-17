@@ -1,13 +1,13 @@
 # Receipt Rekognition Lambda
-### [Project link]() Fill later
-### [Documentation]() Fill later
+### [Project link](https://master.d350pue95ehqmp.amplifyapp.com/)
+### [Documentation](https://docs.google.com/document/d/1IlVUQphtsvE4nSn3mD8FkTK-arvkAeO-Rf9J3Ciekwk)
 
 ## [San Jose State University](http://www.sjsu.edu/)
 ## Course: [Cloud Technologies](http://info.sjsu.edu/web-dbgen/catalog/courses/CMPE281.html)
 ## Professor: [Sanjay Garje](https://www.linkedin.com/in/sanjaygarje/)
 ## Student: [Patrick Bustos](https://www.linkedin.com/in/patrickdbustos/)
 ## Project Introduction
-This project is a section of [this repository](). This repository handles everything that has to do with Rekognition and Lex. For Rekognition, images of receipts should ideally be cropped to include Total amount, Tax amount, and store name. If there is too much text on the receipt, images should be cropped to include Total amount and Tax amount if found on receipt. Ideally Lex should be able to detect wrong inputs for each type but I created a Lambda function that should validate all inputs through string modification with regex.
+This project is a section of this [repository](https://github.com/bfkwong/itemize). This repository handles everything that has to do with Rekognition and Lex. For Rekognition, images of receipts should ideally be cropped to include Total amount, Tax amount, and store name. If there is too much text on the receipt, images should be cropped to include Total amount and Tax amount if found on receipt. Ideally Lex should be able to detect wrong inputs for each type but I created a Lambda function that should validate all inputs through string modification with regex. W2 forms are also an acceptable format though it hasn't been tested as much as regular store receipts.
 ## Screenshots
 - Lambda examples
   - Successful detection ![Success](https://i.imgur.com/tX7yfoe.png)
@@ -55,7 +55,8 @@ This project is a section of [this repository](). This repository handles everyt
 
 ### Completed Rekognition detections
 - Standard store receipts
+- One W2 form, PDF style
 
 ### Completed Lex functionality
 - Returns input of user through Lex
-- Basic numerical validation, needs more tuning
+- Basic numerical validation

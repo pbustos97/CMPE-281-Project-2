@@ -6,6 +6,7 @@
 ## Course: [Cloud Technologies](http://info.sjsu.edu/web-dbgen/catalog/courses/CMPE281.html)
 ## Professor: [Sanjay Garje](https://www.linkedin.com/in/sanjaygarje/)
 ## Student: [Patrick Bustos](https://www.linkedin.com/in/patrickdbustos/)
+## Group: 3 Musketeers
 ## Project Introduction
 This project is a section of this [repository](https://github.com/bfkwong/itemize). This repository handles everything that has to do with Rekognition and Lex. For Rekognition, images of receipts should ideally be cropped to include Total amount, Tax amount, and store name. If there is too much text on the receipt, images should be cropped to include Total amount and Tax amount if found on receipt. Ideally Lex should be able to detect wrong inputs for each type but I created a Lambda function that should validate all inputs through string modification with regex. W2 forms are also an acceptable format though it hasn't been tested as much as regular store receipts.
 ## Screenshots

@@ -81,26 +81,7 @@ def sales_tax(bucket, filePath, user, category):
                     total = '.'.join(total)
                     total = float(total)
                 else:
-                    prevValue = 0.00
-                    if index-1 >= 0:
-                        prevValue = res['TextDetections'][index-1]['DetectedText']
-                    nextValue = 0.00
-                    if index+1 < len(res['TextDetections']):
-                        nextValue = res['TextDetections'][index+1]['DetectedText']
-                    prevValue = re.sub('[^0-9.]', '', prevValue)
-                    prevValue = prevValue.split('.')
-                    prevValue = [prevValue[0], prevValue[1]]
-                    prevValue = '.'.join(prevValue)
-                    prevValue = float(prevValue)
-                    nextValue = re.sub('[^0-9.]', '', nextValue)
-                    nextValue = nextValue.split('.')
-                    nextValue = [nextValue[0], nextValue[1]]
-                    nextValue = '.'.join(nextValue)
-                    nextValue = float(nextValue)
-                    if prevValue >= nextValue:
-                        total = prevValue
-                    elif prevValue < nextValue:
-                        total = nextValue
+                    total = numberNotFound(res['TextDetections'], index)
                 totalFound = True
             if 'tax' in detectedText:
                 tax = detectedText
@@ -108,8 +89,9 @@ def sales_tax(bucket, filePath, user, category):
                     tax = tax.split()
                     tax = tax[-1]
                     tax = float(re.sub('[^0-9.]', '', tax))
-                    taxFound = True                
-    
+                else:
+                    tax = numberNotFound(res['TextDetections'], index)
+                taxFound = True
     if storeName == [] or storeName == None or len(storeName) == 0:
         storeName = ''
     if total == None:
@@ -250,7 +232,6 @@ def dynamoUpdate(res):
     return
 
 def dispatch(category, bucket, filePath, user):
-
     if category == 'sales_tax':
         res = sales_tax(bucket, filePath, user, category)
     elif category == 'medical_tax':
@@ -270,3 +251,36 @@ def dispatch(category, bucket, filePath, user):
     else:
         res = None
     return res
+
+# Helper function if number is not found on a line
+# tax still doesn't work with bebeyokoono01.jpg :(
+def numberNotFound(textDetections, index):
+    prevValue = 0.00
+    if index-1 >= 0:
+        prevValue = textDetections[index-1]['DetectedText']
+    nextValue = 0.00
+    if index+1 < len(textDetections):
+        nextValue = textDetections[index+1]['DetectedText']
+    prevValue = re.sub('[^0-9.]', '', prevValue)
+    prevValue = prevValue.split('.')
+    if len(prevValue) >= 2:
+        prevValue = [prevValue[0], prevValue[1]]
+        prevValue = '.'.join(prevValue)
+        prevValue = float(prevValue)
+    nextValue = re.sub('[^0-9.]', '', nextValue)
+    nextValue = nextValue.split('.')
+    if len(nextValue) >= 2:
+        nextValue = [nextValue[0], nextValue[1]]
+        nextValue = '.'.join(nextValue)
+        nextValue = float(nextValue)
+    if type(prevValue) == float and type(nextValue) != float:
+        return prevValue
+    elif type(prevValue) != float and type(nextValue) == float:
+        return nextValue
+    elif type(prevValue) == float and type(nextValue) == float:
+        if prevValue >= nextValue:
+            return prevValue
+        elif prevValue < nextValue:
+            return nextValue
+    else:
+        return 0.00

@@ -34,7 +34,7 @@ This project is a section of this [repository](https://github.com/bfkwong/itemiz
   - Create two Lambda functions with any name
   - Copy and Paste the code in the `sales_tax/receipt_sales_tax.py` file into the default Lambda function of one of the created Lambdas
     - This file inside of the Lambda console should be called lambda_function.py
-  - Upload all the common .py files from the common folder to the Lambda console folder containing the file lambda_handler.py
+  - Upload all the common .py files from the common folder to the Lambda console folder containing the file lambda_function.py
   - Copy and Paste the code in the `lex-register-user.py` file into the other created Lambda
   - When creating a test for the Rekognition Lambda, make sure that the 'category', file', and 'userId' query parameters are in the test. (Formatted from the `apigateway-aws-proxy-test`)
     - This is important for the Rekognition Lambda to work
